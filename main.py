@@ -1,12 +1,10 @@
-import json
-from io import BytesIO
-
 from twisted.internet import protocol, reactor, endpoints, task
 from twisted.internet.interfaces import IAddress
 
 from src import Buffer
 from src.packets import Packet
-from src.stages import stage
+from src.player import Player
+from src.stages import HandShake, Status, Login, Configuration, Play
 from src.structs import VarInt
 
 
@@ -18,34 +16,19 @@ class State:
     CONFIGURATION = 3
 
 
-STATES = {State.HANDSHAKE: stage.HandShake}
-
-
-def get_status(
-    *,
-    max_players: int,
-    player_amount: int,
-    players: list[dict] = None,
-    description: str,
-):
-    if players is None:
-        players = list()
-
-    return json.dumps(
-        {
-            "version": {"name": "1.20.4", "protocol": 765},
-            "players": {"max": max_players, "online": player_amount, "sample": players},
-            "description": {"text": description},
-            "favicon": "data:image/png;base64,<data>",
-            "enforcesSecureChat": True,
-            "previewsChat": True,
-        }
-    )
+STATES = {
+    State.HANDSHAKE: HandShake,
+    State.PLAY: Play,
+    State.STATUS: Status,
+    State.LOGIN: Login,
+    State.CONFIGURATION: Configuration,
+}
 
 
 class Server(protocol.Protocol):
     def __init__(self) -> None:
-        self.state = STATES[-1]()
+        self.player = Player(self)
+        self.state = STATES[-1](self.player)
         self.keepalive_loop = task.LoopingCall(self.keepalive)
 
     def keepalive(self) -> None:
@@ -55,20 +38,14 @@ class Server(protocol.Protocol):
 
     def dataReceived(self, data: bytes) -> None:
         buffer = Buffer(initial_bytes=data)
-        print("-------------------------------")
-        print("RECEIVED DATA")
-        print(data.hex(" "))
-
         next_state = self.state.process_packet(
             Packet(initial_bytes=buffer.read(buffer.unpack_varint()))
         )
 
         if next_state is not None:
-            self.state = STATES[next_state]()
+            self.state = STATES[next_state](self.player)
 
-        print("NEXT PACKET")
         next_packet = buffer.read()
-        print(next_packet.hex(" "))
         if next_packet:
             self.dataReceived(next_packet)
 

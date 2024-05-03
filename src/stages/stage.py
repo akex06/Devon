@@ -4,16 +4,15 @@ from typing import Callable, ClassVar, Any
 
 from src import structs
 from src.packets.packet import Packet
-from src.structs import (
-    UShort,
-    String,
-    VarInt,
-)
+from src.player import Player
 
 
 class Stage(metaclass=abc.ABCMeta):
     packet_mapping: ClassVar[dict[int, list[structs.BaseStruct]]]
-    listeners = dict()
+    listeners: list
+
+    def __init__(self, player: Player) -> None:
+        self.player = player
 
     @staticmethod
     def decode_args(packet, parameter_types) -> list[Any]:
@@ -35,7 +34,6 @@ class Stage(metaclass=abc.ABCMeta):
 
         func, parameter_types = self.listeners[packet.id]
         parameters = self.decode_args(packet, parameter_types)
-
         return func(self, *parameters)
 
 
@@ -58,16 +56,3 @@ class listen_wrap:
 
 def listen(packet_id: int):
     return lambda func: listen_wrap(packet_id, func)
-
-
-class HandShake(Stage):
-    packet_mapping = {0: [VarInt, String, UShort, VarInt]}
-
-    @listen(0)
-    def handshake(
-        self, protocol_version: int, server_address: str, port: int, next_state: int
-    ) -> int:
-        print(protocol_version)
-        print(server_address)
-        print(port)
-        return next_state

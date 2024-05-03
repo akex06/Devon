@@ -1,6 +1,7 @@
 import abc
 import inspect
 import struct
+import uuid
 from io import BytesIO
 from typing import Any, ClassVar
 
@@ -141,3 +142,13 @@ class Position(BaseStruct):
             z -= 1 << 26
 
         return x, y, z
+
+
+class UUID(BaseStruct):
+    @classmethod
+    def pack(cls, _uuid: uuid.UUID) -> bytes:
+        return _uuid.bytes
+
+    @classmethod
+    def unpack(cls, buffer: BytesIO) -> uuid.UUID:
+        return uuid.UUID(bytes=buffer.read(16))

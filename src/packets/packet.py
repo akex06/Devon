@@ -1,4 +1,9 @@
+from typing import Self
+
+from twisted.internet.protocol import Protocol
+
 from src.buffer import Buffer
+from src.structs import VarInt
 
 
 class Packet(Buffer):
@@ -12,6 +17,7 @@ class Packet(Buffer):
             self.id = self.unpack_varint()
         else:
             self.id = packet_id
+            self.pack_varint(packet_id)
 
     def print(self) -> None:
         print(self.getvalue())

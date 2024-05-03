@@ -11,7 +11,7 @@ class Tag(metaclass=abc.ABCMeta):
     id: ClassVar[int] = None
     fmt: ClassVar[str | None] = None
 
-    def __init__(self, name: str, value: Any) -> None:
+    def __init__(self, name: str | None, value: Any) -> None:
         self.name = name
         self.value = value
 
