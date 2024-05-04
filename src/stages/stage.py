@@ -1,24 +1,28 @@
 import abc
-from dataclasses import dataclass
-from typing import Callable, ClassVar, Any
+import inspect
+from typing import Callable, Any
 
-from src import structs
 from src.packets.packet import Packet
 from src.player import Player
 
 
 class Stage(metaclass=abc.ABCMeta):
-    packet_mapping: ClassVar[dict[int, list[structs.BaseStruct]]]
-    listeners: list
+    listeners: list[int, Callable]
 
     def __init__(self, player: Player) -> None:
         self.player = player
 
     @staticmethod
-    def decode_args(packet, parameter_types) -> list[Any]:
+    def decode_args(func: Callable, packet: Packet) -> list[Any]:
         args = list()
+        parameter_types = inspect.signature(func).parameters.values()
+
         for parameter_type in parameter_types:
-            args.append(parameter_type.unpack(packet))
+            if parameter_type.name == "self":
+                continue
+
+            struct = parameter_type.annotation
+            args.append(struct(struct.unpack(packet)))
 
         return args
 
@@ -28,27 +32,24 @@ class Stage(metaclass=abc.ABCMeta):
         print(f"State: {type(self).__name__}")
         print(f"Packet ID: {hex(packet.id)}")
 
-        if packet.id not in self.packet_mapping:
+        if packet.id not in self.listeners:
             print("PACKET NOT IMPLEMENTED")
             return
 
-        func, parameter_types = self.listeners[packet.id]
-        parameters = self.decode_args(packet, parameter_types)
+        func = self.listeners[packet.id]
+        parameters = self.decode_args(func, packet)
         return func(self, *parameters)
 
 
-@dataclass
 class listen_wrap:
-    packet_id: int
-    fn: Callable
-    owner: Stage = None
+    def __init__(self, packet_id: int, fn: Callable, owner: Stage = None) -> None:
+        self.packet_id = packet_id
+        self.fn = fn
+        self.owner = owner
 
     def __set_name__(self, owner, name):
         self.owner = owner
-        self.owner.listeners[self.packet_id] = (
-            self.fn,
-            self.owner.packet_mapping[self.packet_id],
-        )
+        self.owner.listeners[self.packet_id] = self.fn
 
     def __call__(self, *args, **kwargs):
         return self.fn(*args, **kwargs)

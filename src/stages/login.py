@@ -6,11 +6,10 @@ from src.structs import String, UUID
 
 
 class Login(Stage):
-    packet_mapping = {0: [String, UUID], 3: []}
     listeners = dict()
 
     @listen(0)
-    def status_request(self, name: str, _uuid: uuid.UUID) -> None:
+    def status_request(self, name: String, _uuid: UUID) -> None:
         print(name, _uuid)
 
         login_success = Packet(packet_id=0x2)

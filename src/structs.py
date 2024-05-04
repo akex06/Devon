@@ -1,5 +1,4 @@
 import abc
-import inspect
 import struct
 import uuid
 from io import BytesIO
@@ -18,7 +17,7 @@ class BaseStruct(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-class Struct(BaseStruct):
+class Struct(int, BaseStruct):
     fmt: ClassVar[str]
 
     @classmethod
@@ -66,7 +65,7 @@ class Double(Struct):
     fmt = ">d"
 
 
-class String(BaseStruct):
+class String(str, BaseStruct):
     @classmethod
     def pack(cls, val: str) -> bytes:
         encoded_str = val.encode("utf-8")
@@ -81,7 +80,7 @@ class String(BaseStruct):
 Identifier = String
 
 
-class VarInt(BaseStruct):
+class VarInt(int, BaseStruct):
     @classmethod
     def pack(cls, val: int) -> bytes:
         if val < 0:
@@ -115,7 +114,7 @@ class VarInt(BaseStruct):
         return total
 
 
-class Position(BaseStruct):
+class Position(tuple, BaseStruct):
     @classmethod
     def pack(cls, position: tuple[int, int, int]) -> bytes:
         return Long.pack(
@@ -144,11 +143,11 @@ class Position(BaseStruct):
         return x, y, z
 
 
-class UUID(BaseStruct):
+class UUID(uuid.UUID, BaseStruct):
     @classmethod
     def pack(cls, _uuid: uuid.UUID) -> bytes:
         return _uuid.bytes
 
     @classmethod
-    def unpack(cls, buffer: BytesIO) -> uuid.UUID:
-        return uuid.UUID(bytes=buffer.read(16))
+    def unpack(cls, buffer: BytesIO) -> str:
+        return uuid.UUID(bytes=buffer.read(16)).hex

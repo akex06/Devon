@@ -6,7 +6,6 @@ from src.structs import Long
 
 
 class Status(Stage):
-    packet_mapping = {0: (), 1: [Long]}
     listeners = dict()
 
     @staticmethod
@@ -49,7 +48,7 @@ class Status(Stage):
         self.player.send(status)
 
     @listen(1)
-    def ping_request(self, value: int) -> None:
+    def ping_request(self, value: Long) -> None:
         ping = Packet(packet_id=0x01)
         ping.pack_long(value)
         self.player.send(ping)

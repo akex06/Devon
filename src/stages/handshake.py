@@ -12,7 +12,11 @@ class HandShake(Stage):
 
     @listen(0)
     def handshake(
-        self, protocol_version: int, server_address: str, port: int, next_state: int
+        self,
+        protocol_version: VarInt,
+        server_address: String,
+        port: UShort,
+        next_state: VarInt,
     ) -> int:
         print(f"{protocol_version=}")
         print(f"{server_address=}")

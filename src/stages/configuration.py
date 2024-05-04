@@ -9,7 +9,6 @@ from src.stages.stage import listen, Stage
 
 
 class Configuration(Stage):
-    packet_mapping = {0: []}
     listeners = dict()
 
     def __init__(self, player: Player):
